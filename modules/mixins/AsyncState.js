@@ -1,5 +1,4 @@
 var React = require('react');
-var resolveAsyncState = require('../utils/resolveAsyncState');
 
 /**
  * A mixin for route handler component classes that fetch at least
@@ -20,36 +19,34 @@ var resolveAsyncState = require('../utils/resolveAsyncState');
  *
  *   var User = React.createClass({
  *   
- *     statics: {
- *   
- *       getInitialAsyncState: function (params, query, setState) {
- *         // Return a hash with keys named after the state variables
- *         // you want to set, as you normally do in getInitialState,
- *         // except the values may be immediate values or promises.
- *         // The state is automatically updated as promises resolve.
- *         return {
- *           user: getUserByID(params.userID) // may be a promise
- *         };
- *   
- *         // Or, use the setState function to stream data!
- *         var buffer = '';
- *   
- *         return {
+ *     getInitialAsyncState: function () {
+ *       var userID = this.props.params.userID;
  *
- *           // Same as above, the stream state variable is set to the
- *           // value returned by this promise when it resolves.
- *           stream: getStreamingData(params.userID, function (chunk) {
- *             buffer += chunk;
+ *       // Return a hash with keys named after the state variables
+ *       // you want to set, as you normally do in getInitialState,
+ *       // except the values may be immediate values or promises.
+ *       // The state is automatically updated as promises resolve.
+ *       return {
+ *         user: getUserByID(userID) // may be a promise
+ *       };
  *   
- *             // Notify of progress.
- *             setState({
- *               streamBuffer: buffer
- *             });
- *           })
+ *       // Streaming data!
+ *       var buffer = '';
  *   
- *         };
- *       }
+ *       return {
+ *
+ *         // Same as above, the stream state variable is set to the
+ *         // value returned by this promise when it resolves.
+ *         stream: getStreamingData(userID, function (chunk) {
+ *           buffer += chunk;
  *   
+ *           // Notify of progress.
+ *           this.setState({
+ *             streamBuffer: buffer
+ *           });
+ *         }.bind(this))
+ *   
+ *       };
  *     },
  *   
  *     getInitialState: function () {
@@ -80,6 +77,14 @@ var resolveAsyncState = require('../utils/resolveAsyncState');
  */
 var AsyncState = {
 
+  contextTypes: {
+    asyncDelegate: React.PropTypes.any.isRequired
+  },
+
+  getAsyncDelegate: function () {
+    return this.context.asyncDelegate;
+  },
+
   propTypes: {
     initialAsyncState: React.PropTypes.object
   },
@@ -88,18 +93,13 @@ var AsyncState = {
     return this.props.initialAsyncState || null;
   },
 
-  updateAsyncState: function (state) {
-    if (this.isMounted())
-      this.setState(state);
-  },
-
-  componentDidMount: function () {
-    if (this.props.initialAsyncState || typeof this.constructor.getInitialAsyncState !== 'function')
+  componentWillMount: function () {
+    if (this.props.initialAsyncState || !this.getInitialAsyncState)
       return;
 
-    resolveAsyncState(
-      this.constructor.getInitialAsyncState(this.props.params, this.props.query, this.updateAsyncState),
-      this.updateAsyncState
+    this.getAsyncDelegate().resolveAsyncState(
+      this.getInitialAsyncState(),
+      this.setState
     );
   }
 

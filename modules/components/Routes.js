@@ -6,6 +6,7 @@ var Promise = require('when/lib/Promise');
 var LocationActions = require('../actions/LocationActions');
 var Route = require('../components/Route');
 var ActiveDelegate = require('../mixins/ActiveDelegate');
+var AsyncDelegate = require('../mixins/AsyncDelegate');
 var PathListener = require('../mixins/PathListener');
 var RouteStore = require('../stores/RouteStore');
 var Path = require('../utils/Path');
@@ -68,7 +69,7 @@ var Routes = React.createClass({
 
   displayName: 'Routes',
 
-  mixins: [ ActiveDelegate, PathListener ],
+  mixins: [ ActiveDelegate, AsyncDelegate, PathListener ],
 
   propTypes: {
     onAbortedTransition: React.PropTypes.func.isRequired,
